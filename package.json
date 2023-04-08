@@ -1,0 +1,12 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Restful API",
+  "main": "server.js",
+  "scripts": {
+    "start:dev": "nodemon server.js",
+    "start:prod": "nnodemon server.js"
+  },
+  "author": "Manea Valentin Cornel",
+  "license": "ISC"
+}

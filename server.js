@@ -1,10 +1,15 @@
-const express = require('express');
+const mongoose = require('mongoose');
+const app = require('./app');
 
-//CREATE SERVER
-const server = express();
+//DATABASE CONNECTION
+const DATABASE = process.env.DATABASE.replace('<password>', process.env.DATABASE_PASSWORD);
+mongoose.connect(DATABASE)?.then((connection) => {
+  console.log('Database successfully connected');
+});
 
-//STARTUP SERVER WITHT HE PORT OF 3000
-const SERVER_PORT = 3000;
-server.listen(SERVER_PORT, () => {
+//GET THE SERVER PORT
+const SERVER_PORT = process.env.SERVER_PORT;
+//STARTUP SERVER WITH THE GIVEN PORT
+app.listen(SERVER_PORT, () => {
   console.log('Server running');
 });

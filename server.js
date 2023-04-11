@@ -11,5 +11,5 @@ mongoose.connect(DATABASE)?.then((connection) => {
 const SERVER_PORT = process.env.SERVER_PORT;
 //STARTUP SERVER WITH THE GIVEN PORT
 app.listen(SERVER_PORT, () => {
-  console.log('Server running');
+  console.log(`Server running on the port`, SERVER_PORT);
 });

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcryptjs = require('bcryptjs');
+
 /**
  * Mongoose schema  usded to model the structure of the data, default values, and data validation for the USER
  * User data fields within the documents are (firstName,lastName,email,phoneNumber, password, passwordConfirm, role)

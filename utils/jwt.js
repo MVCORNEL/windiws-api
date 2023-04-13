@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 /**
- * Function that ceates and returns a JWT TOKEN, create using the header,payload and the secret.
+ * Function that creates and returns a JWT TOKEN, create using the header,payload and the secret.
  * @param {string} payload payload that will be encodend  into the TOKEN
  * @returns {string} JWT TOKEN
  *

@@ -1,5 +1,8 @@
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 const User = require('../model/userModel');
-const createJWT = require('./../helpers/jwt');
+const createJWT = require('../utils/jwt');
+const catchAsync = require('./../controller/catchAsync');
+const OperationalError = require('../utils/operationalError');
 
 /**
  * Function used to create a JWT TOKEN based on a user id as payload, expiring time, and some headers options.
@@ -21,7 +24,7 @@ const createSendToken = (user, statusCode, res) => {
     httpOnly: true,
   };
   //3 Secure flag used only in production allows cookies to be sent over HTTPS.Only in production otherwise won't work in development
-  if (false) {
+  if (process.env.NODE_ENV === 'production') {
     cookieOptions.secure = true;
   }
   //4 Set the cookie on the response object
@@ -45,44 +48,35 @@ const createSendToken = (user, statusCode, res) => {
  * @param {object} res expects a response object
  * @param {function} next expects a function taht will be used to no navigate to the enxt middlewre
  */
-//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
-exports.loginUser = async (req, res, next) => {
+exports.loginUser = catchAsync(async (req, res, next) => {
   //1 Check if the email and if the password exist.
   const { email, password } = req.body;
   if (!email) {
-    throw new Error('Please provide and email');
+    return next(new OperationalError('Please provide an email'));
   }
   if (!password) {
-    throw new Error('Please provide a password');
+    return next(new OperationalError('Please provide a password'));
   }
 
-  try {
-    //2 Query the user details by its email and select(PROJECTION BY FIELD) only the field required (NOT DISCLOSING OTHER USER DATA)
-    const user = await User.findOne({ email: email }).select('+password');
-    //3 Check if the email is exists into the DB and matched the provided password into a single step.
-    //Avoid doing this in 2 steps like checking first if the user is correct and only after if the password match with the user->
-    //as that we might give extra info if the email or password is correct.
-    //Since the password is ecnrypted there is no way to generate the password back from the hashed password.
-    //Use BCRYPT to generate again the hashed password based on the user inputed pass in order to compare the current generate hash with the generated hash stored into the DB.
-    //Since this encryption belongs to the data itself, the operation will be carried out in the MODEL CLASS.
-    //If the the user doesn't exist the second evalution won't be evalauted
-    if (!user || !(await user.isLoginPasswordCorrect(password, user.password))) {
-      //401 = Unauthorized
-      throw new Error('User or password do not exist');
-    }
-    //4
-    //Remove the password from output
-    user.password = undefined;
-    //5
-    //Create and send JWT and user data to the client
-    createSendToken(user, 200, res);
-  } catch (err) {
-    res.status(401).json({
-      status: err.message,
-      data: err.message,
-    });
+  //2 Query the user details by its email and select(PROJECTION BY FIELD) only the field required (NOT DISCLOSING OTHER USER DATA)
+  const user = await User.findOne({ email: email }).select('+password');
+
+  //3 Check if the email is exists into the DB and matched the provided password into a single step.
+  //Avoid doing this in 2 steps like checking first if the user is correct and only after if the password match with the user->
+  //as that we might give extra info if the email or password is correct.
+  //Since the password is ecnrypted there is no way to generate the password back from the hashed password.
+  //Use BCRYPT to generate again the hashed password based on the user inputed pass in order to compare the current generate hash with the generated hash stored into the DB.
+  //Since this encryption belongs to the data itself, the operation will be carried out in the MODEL CLASS.
+  //If the the user doesn't exist the second evalution won't be evalauted
+  if (!user || !(await user.isLoginPasswordCorrect(password, user.password))) {
+    //401 = Unauthorized
+    next(new OperationalError('Email and password do not match'));
   }
-};
+  //4 Remove the password from output
+  user.password = undefined;
+  //5 Create and send JWT and user data to the client
+  createSendToken(user, 200, res);
+});
 
 /**
  * Middleware function used to create a user account, based on the  data provided into the request object.
@@ -95,27 +89,20 @@ exports.loginUser = async (req, res, next) => {
  * @param {function} next expects a function taht will be used to no navigate to the enxt middlewre
  */
 //Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
-exports.singupUser = async (req, res, next) => {
+exports.singupUser = catchAsync(async (req, res, next) => {
   //Important to avoid using User.create(req.body) -> User can register as an administrator, setting user:"admin" field.
-  try {
-    const createdUser = await User.create({
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      email: req.body.email,
-      phoneNumber: req.body.phoneNumber,
-      password: req.body.password,
-      passwordConfirm: req.body.passwordConfirm,
-    });
+  const createdUser = await User.create({
+    firstName: req.body.firstName,
+    lastName: req.body.lastName,
+    email: req.body.email,
+    phoneNumber: req.body.phoneNumber,
+    password: req.body.password,
+    passwordConfirm: req.body.passwordConfirm,
+  });
 
-    //Remove the password from output -> In schema its projection is false, problem is that it doesn't show up on DB query, but appears when creating a new document
-    createdUser.password = undefined;
+  //Remove the password from output -> In schema its projection is false, problem is that it doesn't show up on DB query, but appears when creating a new document
+  createdUser.password = undefined;
 
-    //Create and send JWT and user data to the client, 201=Successfully created
-    createSendToken(createdUser, 201, res);
-  } catch (err) {
-    res.status(401).json({
-      status: err.message,
-      data: err.message,
-    });
-  }
-};
+  //Create and send JWT and user data to the client, 201=Successfully created
+  createSendToken(createdUser, 201, res);
+});

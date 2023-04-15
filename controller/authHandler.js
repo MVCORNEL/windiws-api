@@ -46,21 +46,19 @@ const createSendToken = (user, statusCode, res) => {
  *
  * @param {object} req expects a request object
  * @param {object} res expects a response object
- * @param {function} next expects a function taht will be used to no navigate to the enxt middlewre
+ * @param {function} next expects a function that will be used to  navigate to the next middleware
  */
 exports.loginUser = catchAsync(async (req, res, next) => {
   //1 Check if the email and if the password exist.
   const { email, password } = req.body;
   if (!email) {
-    return next(new OperationalError('Please provide an email'));
+    return next(new OperationalError('Please provide an email address !', 400));
   }
   if (!password) {
-    return next(new OperationalError('Please provide a password'));
+    return next(new OperationalError('Please provide a password !', 400));
   }
-
   //2 Query the user details by its email and select(PROJECTION BY FIELD) only the field required (NOT DISCLOSING OTHER USER DATA)
   const user = await User.findOne({ email: email }).select('+password');
-
   //3 Check if the email is exists into the DB and matched the provided password into a single step.
   //Avoid doing this in 2 steps like checking first if the user is correct and only after if the password match with the user->
   //as that we might give extra info if the email or password is correct.
@@ -70,7 +68,7 @@ exports.loginUser = catchAsync(async (req, res, next) => {
   //If the the user doesn't exist the second evalution won't be evalauted
   if (!user || !(await user.isLoginPasswordCorrect(password, user.password))) {
     //401 = Unauthorized
-    next(new OperationalError('Email and password do not match'));
+    next(new OperationalError(`Email doesn't match the password`, 401));
   }
   //4 Remove the password from output
   user.password = undefined;
@@ -86,11 +84,11 @@ exports.loginUser = catchAsync(async (req, res, next) => {
  * by calling the @function createSendToken
  * @param {object} req expects a request object
  * @param {object} res expects a response object
- * @param {function} next expects a function taht will be used to no navigate to the enxt middlewre
+ * @param {function} next expects a function that will be used to  navigate to the next middleware
  */
 //Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 exports.singupUser = catchAsync(async (req, res, next) => {
-  //Important to avoid using User.create(req.body) -> User can register as an administrator, setting user:"admin" field.
+  //1 Important to avoid using User.create(req.body) -> User can register as an administrator, setting user:"admin" field.
   const createdUser = await User.create({
     firstName: req.body.firstName,
     lastName: req.body.lastName,
@@ -100,9 +98,57 @@ exports.singupUser = catchAsync(async (req, res, next) => {
     passwordConfirm: req.body.passwordConfirm,
   });
 
-  //Remove the password from output -> In schema its projection is false, problem is that it doesn't show up on DB query, but appears when creating a new document
+  //2 Remove the password from output -> In schema its projection is false, problem is that it doesn't show up on DB query, but appears when creating a new document
   createdUser.password = undefined;
-
-  //Create and send JWT and user data to the client, 201=Successfully created
+  //3 Create and send JWT and user data to the client, 201=Successfully created
   createSendToken(createdUser, 201, res);
+});
+
+/**
+ * Middleware function used to reset a user password based on his registered to the db email account.
+ * This function will be used to create and send to the user through its email address a password reset link.
+ * By calling instance @method user.createPasswordResetToken   a random hexadecimal sequence is generated a and it is sent it to the user,
+ * the sequence is hashed it with sha256 and stored with its expiration date into the DB.
+ * Last step consists in sending an reset email -> TODO
+ * @param {object} req expects a request object
+ * @param {object} res expects a response object
+ * @param {function} next expects a function that will be used to  navigate to the next middleware
+ */
+exports.forgotUserPassword = catchAsync(async (req, res, next) => {
+  //1 Email address is not inserted
+  if (!req.body.email) {
+    return next(new OperationalError('Email field cannot be empty !', 400)); //400 BAD REQUEST
+  }
+
+  //2 Query and get user details based on email address.
+  const user = await User.findOne({ email: req.body.email });
+
+  //3 Check if the email is registerd with the DB
+  if (!user) {
+    return next(new OperationalError("Couldn't find the email address !", 404)); //404 NOT FOUND
+  }
+
+  //4 Generate a random reset token and its experitation date, and update the user with them.
+  const resetToken = user.createPasswordResetToken();
+
+  //5 Deactivate the evaluation, because the password confirmation is it not any longer on the document.
+  await user.save({ validateBeforeSave: false });
+
+  //6 Send the token to the user
+  try {
+    const resetUrlLink = `${req.protocol}://${req.get('host')}/api/v1/users/resetPassword/${resetToken}`;
+
+    res.status(200).json({
+      stats: 'success',
+      //Reset link has to be sent to the user through the email, and never here, because we assume the email is a safe service, where only the user has access to.
+      resetUrlLink,
+    });
+  } catch (err) {
+    //In case that therte is anything wrong, we don't want to persist the useless information to the database
+    user.poasswordResetToken = undefined;
+    user.passwordResetTokenExpireDate = undefined;
+    //Deactivare validation because the passowrd is not any longer on the queried document.
+    await user.save({ validateBeforeSave: false }); // save the change because createPasswordResetToken persists modified data into db.
+    return next(new OperationalError('There was an error sening the email. Try again later'), 500); //500 Internal Server Error
+  }
 });

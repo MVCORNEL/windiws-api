@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto'); //NODE JS MODULE
 const validator = require('validator');
 const bcryptjs = require('bcryptjs');
 
 /**
- * Mongoose schema  usded to model the structure of the data, default values, and data validation for the USER
+ * Mongoose schema  used to model the structure of the data, default values, and data validation for the USER
  * User data fields within the documents are (firstName,lastName,email,phoneNumber, password, passwordConfirm, role)
  */
 const userSchema = mongoose.Schema({
@@ -61,6 +62,9 @@ const userSchema = mongoose.Schema({
     },
   },
 
+  passwordResetToken: String,
+  passwordResetTokenExpireDate: Date,
+
   role: {
     type: String,
     enum: {
@@ -78,7 +82,9 @@ const userSchema = mongoose.Schema({
  *The password will be encrypted only in the case that the password field has actually been updated (password changed and password created) ->
  *in case the user updates another field, the password won't get encrypted again.
  *Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
+
  *@param {function} next function called to jump to the next middleware into the stack
+ 
  */
 userSchema.pre('save', async function (next) {
   //1 SKIP TO NEXT MIDDLEWARE IF PASSWORD NOT UPDATED
@@ -98,11 +104,31 @@ userSchema.pre('save', async function (next) {
  * with the hashed result from the candidate password.
  * @param {string} candiatePassword password that the user passes into the request body object (not encrypted)
  * @param {string} dbPassword password hashed and persisted into the data base (encrpted)
+ *
+ * @returns true if the hascode generate of the passwords matches
+ *
  */
 //
 userSchema.methods.isLoginPasswordCorrect = async function (candiatePassword, dbPassword) {
   //Because the password is projection is set to false, the password can't be access using this.passord (instead a db parameter is used)
   return await bcryptjs.compare(candiatePassword, dbPassword);
+};
+
+/**
+ * Instance method available for all the documents of a the User collection, used generate a random reset token string later sent to the user.
+ * In the database the randaom generated token hasdcode will be stored and its expiring date.
+ *
+ * @returns the plain string of the random generated token
+ */
+userSchema.methods.createPasswordResetToken = function () {
+  //1 Generate random rest token with the length of 32 bytes, which get converted into a hexadecimal number.
+  const restartToken = crypto.randomBytes(32).toString('hex');
+  //2 Store into the DB the sha256 hascode in hexadecimal format of the random generate code, never store plain reset token into the DB
+  this.passwordResetToken = crypto.createHash('sha256').update(restartToken).digest('hex');
+  //3 Store into the DB, token's expire time, which is 10 minutes from de current time
+  this.passwordResetTokenExpireDate = Date.now() + 1000 * 60 * 10;
+  //4 Return to the user the plaintext of the reset token.
+  return restartToken;
 };
 
 //MODEL FOR CREATING USER DOCUMENTS

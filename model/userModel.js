@@ -84,7 +84,7 @@ const userSchema = mongoose.Schema({
  *Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 
  *@param {function} next function called to jump to the next middleware into the stack
- 
+
  */
 userSchema.pre('save', async function (next) {
   //1 SKIP TO NEXT MIDDLEWARE IF PASSWORD NOT UPDATED
@@ -102,16 +102,16 @@ userSchema.pre('save', async function (next) {
 /**
  * Instance method available for all the documents of a the User collection, used to compare hashed password from the database
  * with the hashed result from the candidate password.
- * @param {string} candiatePassword password that the user passes into the request body object (not encrypted)
+ * @param {string} candidatePassword password that the user passes into the request body object (not encrypted)
  * @param {string} dbPassword password hashed and persisted into the data base (encrpted)
  *
  * @returns true if the hascode generate of the passwords matches
  *
  */
 //
-userSchema.methods.isLoginPasswordCorrect = async function (candiatePassword, dbPassword) {
+userSchema.methods.isLoginPasswordCorrect = async function (candidatePassword, dbPassword) {
   //Because the password is projection is set to false, the password can't be access using this.passord (instead a db parameter is used)
-  return await bcryptjs.compare(candiatePassword, dbPassword);
+  return await bcryptjs.compare(candidatePassword, dbPassword);
 };
 
 /**

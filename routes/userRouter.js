@@ -1,11 +1,12 @@
 const express = require('express');
-const { singupUser, loginUser, forgotUserPassword } = require('../controller/authHandler');
+const { singupUser, loginUser, forgotUserPassword, resetPassword } = require('../controller/authHandler');
 
 const router = express.Router();
 
 //Authentification route defition resources, used to map authentification handlers
 router.post('/signup', singupUser);
 router.post('/login', loginUser);
-router.patch('/forgotPassword', forgotUserPassword);
+router.post('/forgotPassword', forgotUserPassword);
+router.patch('/resetPassword/:token', resetPassword);
 
 module.exports = router;

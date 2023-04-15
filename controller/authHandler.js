@@ -1,4 +1,5 @@
 //Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
+const crypto = require('crypto');
 const User = require('../model/userModel');
 const createJWT = require('../utils/jwt');
 const catchAsync = require('./../controller/catchAsync');
@@ -105,8 +106,7 @@ exports.singupUser = catchAsync(async (req, res, next) => {
 });
 
 /**
- * Middleware function used to reset a user password based on his registered to the db email account.
- * This function will be used to create and send to the user through its email address a password reset link.
+ * Middleware function used to send a user a reset password link on his emails address
  * By calling instance @method user.createPasswordResetToken   a random hexadecimal sequence is generated a and it is sent it to the user,
  * the sequence is hashed it with sha256 and stored with its expiration date into the DB.
  * Last step consists in sending an reset email -> TODO
@@ -138,6 +138,8 @@ exports.forgotUserPassword = catchAsync(async (req, res, next) => {
   try {
     const resetUrlLink = `${req.protocol}://${req.get('host')}/api/v1/users/resetPassword/${resetToken}`;
 
+    //TODO send user email
+
     res.status(200).json({
       stats: 'success',
       //Reset link has to be sent to the user through the email, and never here, because we assume the email is a safe service, where only the user has access to.
@@ -145,10 +147,61 @@ exports.forgotUserPassword = catchAsync(async (req, res, next) => {
     });
   } catch (err) {
     //In case that therte is anything wrong, we don't want to persist the useless information to the database
-    user.poasswordResetToken = undefined;
+    user.passwordResetToken = undefined;
     user.passwordResetTokenExpireDate = undefined;
     //Deactivare validation because the passowrd is not any longer on the queried document.
     await user.save({ validateBeforeSave: false }); // save the change because createPasswordResetToken persists modified data into db.
     return next(new OperationalError('There was an error sening the email. Try again later'), 500); //500 Internal Server Error
   }
+});
+
+/**
+ * Middleware function used to reset the current user password, and login the user afterwards with  JWT
+ * The client must provide a new password and its confirmation. Token will be embeded in the current link address as :token param.
+ * By calling instance @function user.createSendToken   after the user successfully reset the password in order log the user in
+ * Update passwordChangedAt -> TODO
+ * @param {object} req expects a request object
+ * @param {object} res expects a response object
+ * @param {function} next expects a function that will be used to  navigate to the next middleware
+ */
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  //1) Get the user details from the db, linked with the forgotten password token.
+  // The token sent by accessing  forgorPassword is non-ecrypted while the one stored within the DB is hashed.
+  // Encrypt/hash the original token, in oreder to compare their values.
+  const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+  //Only details known about the user at the moment his token value, also check if the hashedTokenExpireDate is not obsoleted
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetTokenExpireDate: { $gt: Date.now() },
+  });
+
+  //2 If the token has not expired and the user exists, set a new password.
+  if (!user) {
+    //400 BAD REQUEST
+    return next(new OperationalError('Token is invalid, maybe it expired.', 400));
+  }
+  //Password must exist
+  if (!req.body.password) {
+    //400 BAD REQUEST
+    return next(new OperationalError('You must provide a password!', 400));
+  }
+  //Password Confirmation  must exist
+  if (!req.body.passwordConfirm) {
+    //400 BAD REQUEST
+    return next(new OperationalError('Your must provide a confirmation password !', 400));
+  }
+
+  //Not turning of the validators + using onSave instead of update, as that the validators will still work.
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  user.poasswordResetToken = undefined;
+  user.passwordResetTokenExpireDate = undefined;
+
+  await user.save();
+
+  //3 Update changedPasswordAt
+  //TODO
+
+  //4) Log in the user, and send him JWT.
+  createSendToken(user, 200, res);
 });

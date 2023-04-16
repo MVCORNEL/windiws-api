@@ -4,15 +4,23 @@ const express = require('express');
 const OperationalError = require('./utils/operationalError');
 const globalErrorHandler = require('./controller/errorController');
 const userRouter = require('./routes/userRouter');
+const productRouter = require('./routes/productRouter');
+const morgan = require('morgan');
 
 //Setup Config variables.
 dotenv.config({ path: './config.env' });
 //Create Server.
 const app = express();
 
+//Morgan -> only in development process will reqturn query details
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
 //Body parser - Takes data coming from the user and puts in in the body of the request object (15 KB LIMIT).
 app.use(express.json({ limit: '15kb' }));
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/products', productRouter);
 
 //Unhadled routes, if the code reaches this point it means that the desired route doesn't exit (all stands for all http methods, while * stand for any route)
 app.all('*', (req, res, next) => {

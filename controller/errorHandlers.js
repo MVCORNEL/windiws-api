@@ -1,3 +1,5 @@
+const OperationalError = require('../utils/operationalError');
+
 //TYPES OF MONGOOSE ERRORS -> WILL RETURN A NEW OPERATIONAL ERROR
 /**
  * Function use to create an OperationalError, providing a human friendly message

@@ -1,3 +1,4 @@
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 const OperationalError = require('../utils/operationalError');
 const { handleCastErrorDB, handleDuplicateFieldsDB, handleValidationErrorDB } = require('./errorHandlers');
 

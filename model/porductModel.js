@@ -1,9 +1,8 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
-
 /**
  * Mongoose schema  used to model the structure of the data, default values, and data validation for the PRODUCT
- * User data fields within the documents are (name,summary,email,description, imageUrl, slug)
+ * Product  fields within the documents are (name,summary,email,description, imageUrl, slug)
  */
 const productSchema = new mongoose.Schema({
   name: {
@@ -28,7 +27,7 @@ const productSchema = new mongoose.Schema({
     type: String,
     trim: true,
     minLength: [50, 'A product summary must have at least 50 characters.'],
-    maxLength: [120, 'A product summary must have maximum 120 characters.'],
+    maxLength: [250, 'A product summary must have maximum 25 characters.'],
     requried: [true, 'A product must a short summary '],
   },
 
@@ -39,7 +38,7 @@ const productSchema = new mongoose.Schema({
     minLength: [50, 'A product summary must have at least 50 characters.'],
   },
 
-  imageUrl: {
+  imgUrl: {
     type: String,
     required: [true, 'A product must have an url pointing an image'],
   },

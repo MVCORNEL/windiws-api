@@ -1,3 +1,4 @@
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 const mongoose = require('mongoose');
 const crypto = require('crypto'); //NODE JS MODULE
 const validator = require('validator');

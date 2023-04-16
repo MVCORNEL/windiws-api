@@ -84,7 +84,7 @@ class FilterApi {
   paginate() {
     //convert to Number * and || is a nice trick for defining default values
     const page = this.expressQuery.page * 1 || 1;
-    const limit = this.expressQuery.limit * 1 || 1;
+    const limit = this.expressQuery.limit * 1 || 100;
     //In order to achieve the desired result, the unwanted result will be skipped
     const skip = (page - 1) * limit;
     this.mongooseQuery.skip(skip).limit(limit);

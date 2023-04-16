@@ -1,3 +1,4 @@
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 const express = require('express');
 const { singupUser, loginUser, forgotUserPassword, resetPassword } = require('../controller/authHandler');
 

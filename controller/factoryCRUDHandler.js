@@ -47,7 +47,7 @@ exports.getAllDocuments = (Model) => {
     const filteredQuery = new FilterApi(mongooseQuery, expressQuery).filter().sort().project().paginate();
     //filtered,sorted,projected, and paginated results
     const resultDocuments = await filteredQuery.mongooseQuery;
-    FilterApi;
+
     res.status(200).json({
       status: 'success',
       results: resultDocuments.length,

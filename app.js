@@ -6,6 +6,7 @@ const globalErrorHandler = require('./controller/errorController');
 const userRouter = require('./routes/userRouter');
 const productRouter = require('./routes/productRouter');
 const morgan = require('morgan');
+const cors = require('cors');
 
 //Setup Config variables.
 dotenv.config({ path: './config.env' });
@@ -16,6 +17,9 @@ const app = express();
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+//Implement CORS
+app.use(cors());
 
 //Body parser - Takes data coming from the user and puts in in the body of the request object (15 KB LIMIT).
 app.use(express.json({ limit: '15kb' }));

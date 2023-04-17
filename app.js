@@ -19,6 +19,9 @@ if (process.env.NODE_ENV === 'development') {
 
 //Body parser - Takes data coming from the user and puts in in the body of the request object (15 KB LIMIT).
 app.use(express.json({ limit: '15kb' }));
+//Decode data that is sent through hmtl form
+// app.use(express.urlencoded());
+
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/products', productRouter);
 

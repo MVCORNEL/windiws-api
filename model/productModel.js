@@ -18,8 +18,8 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: [true, 'A product must have a category'],
     enum: {
-      values: ['doors', 'windows', 'nets', 'sills'],
-      message: 'Category must be either:  doors, windows, nets, sills',
+      values: ['door', 'window', 'net', 'sill'],
+      message: 'Category must be either:  door, window, net, sill',
     },
   },
 

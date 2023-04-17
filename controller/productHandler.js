@@ -1,4 +1,4 @@
-const Product = require('./../model/porductModel');
+const Product = require('../model/productModel');
 const {
   createDocument,
   getDocument,
@@ -17,7 +17,7 @@ exports.getAllProducts = getAllDocuments(Product);
 /**
  * Middleware function used to create a new product document entry based on the user information passed into the body request object.
  */
-exports.createProduct = createDocument(Product);
+exports.createProduct = createDocument(Product, 'products');
 /**
  * Middleware function used to delete  product document entry based on a user id
  */

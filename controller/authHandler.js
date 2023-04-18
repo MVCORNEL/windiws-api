@@ -246,3 +246,41 @@ exports.protectRoute = catchAsync(async (req, res, next) => {
   req.user = user;
   next();
 });
+
+/**
+ * Middleware function that will put on the response object user specific information, if the user has logged in.
+ * This function will expect a valid  jwt on the req headers, if the jwt exists, is valid will pass to the user data with personal character.
+ * @param {object} req expects a request object
+ * @param {object} res expects a response object
+ * @param {function} next expects a function that will be used to  navigate to the next middleware
+ */
+exports.isLoggedIn = catchAsync(async (req, res, next) => {
+  //1 Get and store the jwt bearer token
+  let jwtToken;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    //Token format beeing Bearer xxxxx, take just the token
+    jwtToken = req.headers.authorization.split(' ')[1];
+
+    //2 Token verification. Verigy if someone manipulated the data or if the token has expired.
+    //  Promisify function, keep the code sequential.
+    const decodedPayload = await promisify(jwt.verify)(jwtToken, process.env.JSON_TOKEN_SECRET);
+
+    //3 Check if the user still exists, maybe got deleted his account meantime
+    const user = await User.findById(decodedPayload.id);
+    if (!user) {
+      //Don't create any errors, just move forward to the next middleware
+      return next();
+    }
+    //4 Check if the user changed his password after the  after the JWT was issued.
+    if (user.isPasswordChangedAfterJWTIssued(decodedPayload.iat)) {
+      //Don't create any errors, just move forward to the next middleware
+      return next();
+    }
+
+    //5 The logged in user will receive extra information with personal character.
+    const userInfo = { name: user.name, email: user.email };
+    res.locals.user = userInfo;
+  }
+
+  next();
+});

@@ -7,6 +7,7 @@ const userRouter = require('./routes/userRouter');
 const productRouter = require('./routes/productRouter');
 const morgan = require('morgan');
 const cors = require('cors');
+const path = require('path');
 
 //Setup Config variables.
 dotenv.config({ path: './config.env' });
@@ -21,10 +22,16 @@ if (process.env.NODE_ENV === 'development') {
 //Implement CORS
 app.use(cors());
 
+//Serv static images within the public file folder
+app.use(express.static(path.join(__dirname, 'public/images/products')));
+
 //Body parser - Takes data coming from the user and puts in in the body of the request object (15 KB LIMIT).
 app.use(express.json({ limit: '15kb' }));
-//Decode data that is sent through hmtl form
-// app.use(express.urlencoded());
+
+//Serve the product images to the clinet
+app.get('/public/images/products/:path', function (req, res) {
+  res.download('./public/images/products/' + req.params.path);
+});
 
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/products', productRouter);

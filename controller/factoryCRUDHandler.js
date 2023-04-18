@@ -3,6 +3,8 @@ const catchAsync = require('./catchAsync');
 const FilterApi = require('../utils/filterAPI');
 const OperationalError = require('./../utils/operationalError');
 const { resizeAndStoreImage } = require('./../utils/imageProcessor');
+const URL = require('url');
+
 /**
  * Middleware function used query the database for a document based on a provided _id and its data Model object,
  * Sends the result back to the client.
@@ -46,14 +48,12 @@ exports.getAllDocuments = (Model) => {
     const mongooseQuery = Model.find();
     const filteredQuery = new FilterApi(mongooseQuery, expressQuery).filter().sort().project().paginate();
     //filtered,sorted,projected, and paginated results
-    const resultDocuments = await filteredQuery.mongooseQuery;
+    const documents = await filteredQuery.mongooseQuery;
 
     res.status(200).json({
       status: 'success',
-      results: resultDocuments.length,
-      data: {
-        resultDocuments,
-      },
+      results: documents.length,
+      data: documents,
     });
   });
 };
@@ -72,16 +72,18 @@ exports.getAllDocuments = (Model) => {
 exports.createDocument = (Model, storedFolder = null) => {
   return catchAsync(async (req, res, next) => {
     //1 If the create request has and expects an image
+
+    const imgPath = `public/images/${storedFolder}/${Date.now()}.jpg`;
     if (storedFolder && req.files.image) {
       //set the imgUrl on body object, used later for creating and inserting the doc into db and for image resizing and storing
-      req.body.imgUrl = `public/images/${storedFolder}/${Date.now()}.jpg`;
+      req.body.imgUrl = `${req.protocol}://${req.get('host')}/${imgPath}`;
     }
     //2 Create and insert into the Db de mongodb document
     const document = await Model.create(req.body);
 
     //3 Upload and resize the image
     if (document && req.files.image && storedFolder) {
-      resizeAndStoreImage(req.files.image[0].buffer, req.body.imgUrl, 500);
+      resizeAndStoreImage(req.files.image[0].buffer, imgPath, 500);
     }
     //4 Let the user know the operation had succeded
     res.status(201).json({

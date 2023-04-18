@@ -65,6 +65,7 @@ const userSchema = mongoose.Schema({
 
   passwordResetToken: String,
   passwordResetTokenExpireDate: Date,
+  passwordChagedAt: Date,
 
   role: {
     type: String,
@@ -101,15 +102,48 @@ userSchema.pre('save', async function (next) {
 });
 
 /**
+ *Middleware function used to change  passwordChangedAtProperty but only when be modified the password property (not when a new doc is created)
+ *@param {function} next function called to jump to the next middleware into the stack
+ */
+userSchema.pre('save', async function (next) {
+  //When a new doc is created the password is not modified, that why isNew() is used
+  if (!this.isModified('password') || this.isNew) {
+    return next();
+  }
+  //VERY IMPORTANT !!
+  //The problem here is sometimes saving the data is a bit slower and sometimes is saved after the JSON WEB TOKEN has been created
+  //That will make it sometimes that the user will not be able to log in using the new token
+  //Sometimes happens that this that the JWT token is created a bit before the changedPasswordTimeStamp
+  //By substractig one or more seconds, will put the the passWordChange time one second in the past(not 100% accurate) but doesn't matter at all
+  this.passwordChagedAt = Date.now() - 1000;
+  next();
+});
+
+/**
+ *Middleware function used to check if the  password  was changed after the token was issued
+ *@param {number} JwtStamp iat number representing represented as time in seconds
+ *@returns {boolean} returns true if the JwtStamp was issued before of password getting changed
+ */
+userSchema.methods.isPasswordChangedAfterJWTIssued = function (JwtStamp) {
+  // Check if the password has been ever changed -> 10 meaning the digits base
+  // Check if user changed password after JWT issued (each payload having its own iat on payload time of ISSUED AT TIME in seconds)
+  if (this.passwordChangedAt) {
+    const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+    //returns true if the password was cahnged after the JWT token was issued
+    return changedTimestamp > JwtStamp;
+  }
+  // Password never changed, by default this field is not required
+  return false;
+};
+
+/**
  * Instance method available for all the documents of a the User collection, used to compare hashed password from the database
  * with the hashed result from the candidate password.
  * @param {string} candidatePassword password that the user passes into the request body object (not encrypted)
  * @param {string} dbPassword password hashed and persisted into the data base (encrpted)
- *
- * @returns true if the hascode generate of the passwords matches
- *
+ 
+* @returns true if the hascode generate of the passwords matches
  */
-//
 userSchema.methods.isLoginPasswordCorrect = async function (candidatePassword, dbPassword) {
   //Because the password is projection is set to false, the password can't be access using this.passord (instead a db parameter is used)
   return await bcryptjs.compare(candidatePassword, dbPassword);

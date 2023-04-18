@@ -4,6 +4,8 @@ const User = require('../model/userModel');
 const createJWT = require('../utils/jwt');
 const catchAsync = require('./../controller/catchAsync');
 const OperationalError = require('../utils/operationalError');
+const { promisify } = require('util');
+const jwt = require('jsonwebtoken');
 
 /**
  * Function used to create a JWT TOKEN based on a user id as payload, expiring time, and some headers options.
@@ -197,11 +199,50 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   user.poasswordResetToken = undefined;
   user.passwordResetTokenExpireDate = undefined;
 
+  //3 Update changedPasswordAt by default i the pre save middleware
   await user.save();
-
-  //3 Update changedPasswordAt
-  //TODO
 
   //4) Log in the user, and send him JWT.
   createSendToken(user, 200, res);
+});
+
+/**
+ * Protection middleware function used to restrict any given route access, based on  a user jwt token credentials, acheived by login in the system.
+ * This specials jwt token will be kept by the user within its headers, being a bear authorization token, carried out by the user as a passport.
+ * @param {object} req expects a request object
+ * @param {object} res expects a response object
+ * @param {function} next expects a function that will be used to  navigate to the next middleware
+ */
+exports.protectRoute = catchAsync(async (req, res, next) => {
+  //1 Get and store the jwt bearer token
+  let jwtToken;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    //Token format beeing Bearer xxxxx, take just the token
+    jwtToken = req.headers.authorization.split(' ')[1];
+  }
+
+  //2 Unauthorized, the token doesn't exist
+  if (!jwtToken) {
+    return next(new OperationalError(`You haven't logged in yet! Log in now to gain access.`), 401);
+  }
+
+  //3 Token verification. Verigy if someone manipulated the data or if the token has expired.
+  //  Promisify function, keep the code sequential.
+  const decodedPayload = await promisify(jwt.verify)(jwtToken, process.env.JSON_TOKEN_SECRET);
+
+  //4 Check if the user still exists, maybe got deleted his account meantime
+  const user = await User.findById(decodedPayload.id);
+  if (!user) {
+    return next(new OperationalError(`It is no longer possible to access this user's token.`), 401);
+  }
+
+  //5 Check if the user changed his password after the  after the JWT was issued.
+  if (user.isPasswordChangedAfterJWTIssued(decodedPayload.iat)) {
+    return next(new OperationalError('Password recently changed by user! Please log once more in.', 401));
+  }
+
+  //6 User gains access to the secure resource
+  //PUT THE ENTIRE USER DATA ON THE REQUEST -> WILL BE MORE USEFUL FURTHER
+  req.user = user;
+  next();
 });

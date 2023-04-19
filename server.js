@@ -23,7 +23,7 @@ mongoose.connect(DATABASE)?.then((connection) => {
 //GET THE SERVER PORT
 const SERVER_PORT = process.env.SERVER_PORT;
 //STARTUP SERVER WITH THE GIVEN PORT
-app.listen(SERVER_PORT, () => {
+const server = app.listen(SERVER_PORT, () => {
   console.log(`Server running on the port`, SERVER_PORT);
 });
 

@@ -1,5 +1,4 @@
 //Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
-const OperationalError = require('../utils/operationalError');
 const { handleCastErrorDB, handleDuplicateFieldsDB, handleValidationErrorDB } = require('./errorHandlers');
 
 //Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
@@ -64,7 +63,6 @@ module.exports = (err, req, res, next) => {
   //All operational error have a status code, that is defined on OperationError objects.
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
-
   //DEVELOPMENT
   if (process.env.NODE_ENV === 'development') {
     sendErrorDevelopment(err, res);

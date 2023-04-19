@@ -25,13 +25,13 @@ const createSendToken = (user, statusCode, res) => {
     expires: new Date(Date.now() + JSON_TOKEN_EXPIRING_TIME_IN_DAYS * DAY_IN_MILLISECONDS),
     //Prevents the cookie to be accessed or modified in any way by the browser. Prvents XSS cross scripting attacks.(HTTP FLAG)
     httpOnly: true,
+    sameSite: 'none',
+    secure: true,
   };
-  //3 Secure flag used only in production allows cookies to be sent over HTTPS.Only in production otherwise won't work in development
-  if (process.env.NODE_ENV === 'production') {
-    cookieOptions.secure = true;
-  }
-  //4 Set the cookie on the response object
+
+  //3 Set the cookie on the response object
   res.cookie('jwt', token, cookieOptions);
+
   //5 set response to the user
   res.status(statusCode).json({
     status: 'success',
@@ -71,7 +71,7 @@ exports.loginUser = catchAsync(async (req, res, next) => {
   //If the the user doesn't exist the second evalution won't be evalauted
   if (!user || !(await user.isLoginPasswordCorrect(password, user.password))) {
     //401 = Unauthorized
-    next(new OperationalError(`Email doesn't match the password`, 401));
+    next(new OperationalError(`Incorrect email or password. Please try again !`, 401));
   }
   //4 Remove the password from output
   user.password = undefined;

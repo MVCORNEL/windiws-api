@@ -21,7 +21,8 @@ exports.handleCastErrorDB = (err) => {
  * @returns OperationalError object
  */
 exports.handleDuplicateFieldsDB = (err) => {
-  const message = `Duplicate field value: ${Object.keys(err.keyValue).join('-')}. Please use another value`;
+  const message = `The ${Object.keys(err.keyValue).join('-')} is already registered. Please use another value !`;
+
   return new OperationalError(message, 400);
 };
 

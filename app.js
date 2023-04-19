@@ -8,6 +8,7 @@ const productRouter = require('./routes/productRouter');
 const morgan = require('morgan');
 const cors = require('cors');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 
 //Setup Config variables.
 dotenv.config({ path: './config.env' });
@@ -20,10 +21,18 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 //Implement CORS
-app.use(cors());
+const corsOptions = {
+  origin: 'http://localhost:3000',
+  credentials: true,
+  optionSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 
 //Body parser - Takes data coming from the user and puts in in the body of the request object (15 KB LIMIT).
 app.use(express.json({ limit: '15kb' }));
+//Cookie Parser - parses data from cookie
+app.use(cookieParser());
 
 //Serv static images within the public file folder
 app.use(express.static(path.join(__dirname, 'public/images/products')));

@@ -33,15 +33,16 @@ const sendErrorDevelopment = (err, res) => {
 const sendErrorProduction = (err, req, res) => {
   //Only the operational erorr will be send in production.Trusted errors.
   if (err.isOperational) {
+    //1 LOG ERROR -> When the app will be deployed by using heroku...will have access to the logs
+    console.error('Error ', err);
     res.status(err.statusCode).json({
-      status: err.status,
+      status: err?.status,
       message: err.message,
     });
   }
   //Programming or other unknown error, do not expose the details to the client
   else {
     //On heroku, this will provide access to the error logs
-    console.error('Error', err);
     //Send a generic message, for non operational errors
     res.status(500).json({
       status: 'error',
@@ -72,7 +73,6 @@ module.exports = (err, req, res, next) => {
     //Operational errors and mongoose errors handled only in production by sending meaningful message to the client (in dev we present the stack)
     let error = { ...err };
     error.message = err.message; //work around because the message doesnt appear otherwise
-    console.log('Error code is', err.code);
     //MONGOOSE ERRORS
     //1 CAST ERROR -> (Mongoose invalid id Error)
     if (err.name === 'CastError') error = handleCastErrorDB(error);

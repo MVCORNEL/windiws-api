@@ -8,7 +8,7 @@ const {
   logout,
   protectRoute,
 } = require('../controller/authHandler');
-const { updateMyAccount, getMyAccount } = require('../controller/userHandler');
+const { updateMyAccount, getMyAccount, deleteMyAccount } = require('../controller/userHandler');
 const router = express.Router();
 
 //Authentification route defition resources, used to map authentification handlers
@@ -17,8 +17,9 @@ router.post('/login', loginUser);
 router.get('/logout', logout);
 router.post('/forgotPassword', forgotUserPassword);
 router.patch('/resetPassword/:token', resetPassword);
-//Logged in user route mounting, protected routes
+//Logged in user route mounting, plus their layer of protection
 router.patch('/updateMe', protectRoute, updateMyAccount);
 router.get('/getMe', protectRoute, getMyAccount);
+router.delete('/deleteMe', protectRoute, deleteMyAccount);
 
 module.exports = router;

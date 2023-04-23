@@ -72,7 +72,7 @@ exports.loginUser = catchAsync(async (req, res, next) => {
   //If the the user doesn't exist the second evalution won't be evalauted
   if (!user || !(await user.isLoginPasswordCorrect(password, user.password))) {
     //401 = Unauthorized
-    next(new OperationalError(`Incorrect email or password. Please try again !`, 401));
+    return next(new OperationalError(`Incorrect email or password. Please try again !`, 401));
   }
   //4 Remove the password from output
   user.password = undefined;
@@ -153,7 +153,7 @@ exports.forgotUserPassword = catchAsync(async (req, res, next) => {
     user.passwordResetTokenExpireDate = undefined;
     //Deactivare validation because the passowrd is not any longer on the queried document.
     await user.save({ validateBeforeSave: false }); // save the change because createPasswordResetToken persists modified data into db.
-    return next(new OperationalError('There was an error sening the email. Try again later'), 500); //500 Internal Server Error
+    return next(new OperationalError('There was an error sening the email. Try again later', 500)); //500 Internal Server Error
   }
 });
 
@@ -219,13 +219,14 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 exports.protectRoute = catchAsync(async (req, res, next) => {
   //1 Get and store the jwt htto cookie token
   let jwtToken;
-  if (req.cookies.jwt) {
+
+  if (req.cookies?.jwt) {
     jwtToken = req.cookies.jwt;
   }
 
   //2 Unauthorized, the token doesn't exist
   if (!jwtToken) {
-    return next(new OperationalError(`You haven't logged in yet! Log in now to gain access.`), 401);
+    return next(new OperationalError(`You haven't logged in yet! Log in now to gain access.`, 401));
   }
 
   //3 Token verification. Verigy if someone manipulated the data or if the token has expired.
@@ -235,7 +236,7 @@ exports.protectRoute = catchAsync(async (req, res, next) => {
   //4 Check if the user still exists, maybe got deleted his account meantime
   const user = await User.findById(decodedPayload.id);
   if (!user) {
-    return next(new OperationalError(`It is no longer possible to access this user's token.`), 401);
+    return next(new OperationalError(`It is no longer possible to access this user's token.`, 401));
   }
 
   //5 Check if the user changed his password after the  after the JWT was issued.
@@ -245,7 +246,6 @@ exports.protectRoute = catchAsync(async (req, res, next) => {
 
   //6 The user gains access to the secure resources, his id establish from its jwt cookie is passed further into the middleware chain.
   req.userID = user._id.valueOf();
-
   next();
 });
 

@@ -62,7 +62,13 @@ const userSchema = mongoose.Schema({
       return (password = passwordConfirm);
     },
   },
-
+  //Active field will be used in order to deactive an account by using the deleteMe route
+  active: {
+    type: Boolean,
+    default: true,
+    //won't ne showed in the output
+    select: false,
+  },
   passwordResetToken: String,
   passwordResetTokenExpireDate: Date,
   passwordChagedAt: Date,
@@ -165,6 +171,18 @@ userSchema.methods.createPasswordResetToken = function () {
   //4 Return to the user the plaintext of the reset token.
   return restartToken;
 };
+
+/**
+ * QUERY MIDDLEWARE function used as a regular expression looking for string that start with find
+ * Show only the active user, for any type user queries.
+ *
+ */
+userSchema.pre(/^find/, async function (next) {
+  //this points to the current query
+  console.log('Called');
+  this.find({ active: { $ne: false } });
+  next();
+});
 
 //MODEL FOR CREATING USER DOCUMENTS
 const User = mongoose.model('User', userSchema);

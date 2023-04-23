@@ -16,7 +16,7 @@ dotenv.config({ path: './config.env' });
 const app = express();
 
 //Morgan -> only in development process will reqturn query details
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'production') {
   app.use(morgan('dev'));
 }
 

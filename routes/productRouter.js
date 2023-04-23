@@ -15,7 +15,7 @@ const { uploadImageInMemory } = require('../utils/imageProcessor');
 const router = express.Router();
 
 router.route('/:id').get(getProduct).patch(protectRoute, updateProduct).delete(protectRoute, deleteProduct);
-router.route('/').get(getAllProducts).post(protectRoute, uploadImageInMemory, createProduct);
+router.route('/').get(protectRoute, getAllProducts).post(protectRoute, uploadImageInMemory, createProduct);
 //upload.single('image')
 
 module.exports = router;

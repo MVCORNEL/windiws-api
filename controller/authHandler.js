@@ -18,11 +18,13 @@ const jwt = require('jsonwebtoken');
 const createSendToken = (user, statusCode, res) => {
   const JSON_TOKEN_EXPIRING_TIME_IN_DAYS = process.env.JSON_TOKEN_EXPIRING_TIME_IN_DAYS;
   const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
+  const TOKEN_EXPIRING_DATE = Date.now() + JSON_TOKEN_EXPIRING_TIME_IN_DAYS * DAY_IN_MILLISECONDS;
+  // const TOKEN_EXPIRING_DATE = Date.now() + 20000;
   //1 Create JWT token with the payload of user's id
   const token = createJWT(user._id);
   //2 Create COOKIE OPTION
   const cookieOptions = {
-    expires: new Date(Date.now() + JSON_TOKEN_EXPIRING_TIME_IN_DAYS * DAY_IN_MILLISECONDS),
+    expires: new Date(TOKEN_EXPIRING_DATE),
     //Prevents the cookie to be accessed or modified in any way by the browser. Prvents XSS cross scripting attacks.(HTTP FLAG)
     httpOnly: true,
     sameSite: 'none',
@@ -32,12 +34,12 @@ const createSendToken = (user, statusCode, res) => {
   //3 Set the cookie on the response object
   res.cookie('jwt', token, cookieOptions);
 
-  //5 set response to the user
+  //4 Set response to the user
   res.status(statusCode).json({
     status: 'success',
-    token,
     data: {
       user,
+      tokenExpiringDate: TOKEN_EXPIRING_DATE,
     },
   });
 };
@@ -46,7 +48,6 @@ const createSendToken = (user, statusCode, res) => {
  * Middleware function used to login a user, based on the  data provided into the request object.
  * If the credentials are correct user data will be fetch from the db,
  * and based on that a JWT token will be created and sent back to the user though a cookie header by calling the @function createSendToken
- *
  * @param {object} req expects a request object
  * @param {object} res expects a response object
  * @param {function} next expects a function that will be used to  navigate to the next middleware
@@ -121,7 +122,6 @@ exports.forgotUserPassword = catchAsync(async (req, res, next) => {
   if (!req.body.email) {
     return next(new OperationalError('Email field cannot be empty !', 400)); //400 BAD REQUEST
   }
-
   //2 Query and get user details based on email address.
   const user = await User.findOne({ email: req.body.email });
 
@@ -208,17 +208,19 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
 /**
  * Protection middleware function used to restrict any given route access, based on  a user jwt token credentials, acheived by login in the system.
- * This specials jwt token will be kept by the user within its headers, being a bear authorization token, carried out by the user as a passport.
+ * This specials jwt token will be sent by the user as http cookie, bein a jwt token, carried out by the user as a passport.
+ * This protect route will, deflect access for any unlogged user.
+ * This function will add the user details on the req object, avoiding any unnecessary querying later in the midleware stack.
+ *
  * @param {object} req expects a request object
  * @param {object} res expects a response object
  * @param {function} next expects a function that will be used to  navigate to the next middleware
  */
 exports.protectRoute = catchAsync(async (req, res, next) => {
-  //1 Get and store the jwt bearer token
+  //1 Get and store the jwt htto cookie token
   let jwtToken;
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    //Token format beeing Bearer xxxxx, take just the token
-    jwtToken = req.headers.authorization.split(' ')[1];
+  if (req.cookies.jwt) {
+    jwtToken = req.cookies.jwt;
   }
 
   //2 Unauthorized, the token doesn't exist
@@ -241,9 +243,9 @@ exports.protectRoute = catchAsync(async (req, res, next) => {
     return next(new OperationalError('Password recently changed by user! Please log once more in.', 401));
   }
 
-  //6 User gains access to the secure resource
-  //PUT THE ENTIRE USER DATA ON THE REQUEST -> WILL BE MORE USEFUL FURTHER
-  req.user = user;
+  //6 The user gains access to the secure resources, his id establish from its jwt cookie is passed further into the middleware chain.
+  req.userID = user._id.valueOf();
+
   next();
 });
 
@@ -283,4 +285,27 @@ exports.isLoggedIn = catchAsync(async (req, res, next) => {
   }
 
   next();
+});
+
+/**
+ * Middleware function used to logout a logged in user. Thhis function will wipe the jwt token taht is saved within the user browser.
+ * This is a must handler because the client cannot access the secure http browser cookie programatically.
+ * @param {object} req expects a request object
+ * @param {object} res expects a response object
+ * @param {function} next expects a function that will be used to  navigate to the next middleware
+ */
+exports.logout = catchAsync(async (req, res, next) => {
+  //1 Create COOKIE OPTION
+  const cookieOptions = {
+    //the cookie will expire within the next second
+    expires: new Date(Date.now() + 1 * 1000),
+    //Prevents the cookie to be accessed or modified in any way by the browser. Prvents XSS cross scripting attacks.(HTTP FLAG)
+    httpOnly: true,
+    sameSite: 'none',
+    secure: true,
+  };
+  //2 Set the JWT token to empty
+  res.cookie('jwt', '', cookieOptions);
+  //3 Finish the request/response cycle and announce the user the logout has completed successfully.
+  res.status(200).json({ status: 'success' });
 });

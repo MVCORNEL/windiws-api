@@ -1,20 +1,23 @@
 //Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 const dotenv = require('dotenv');
 const express = require('express');
-const OperationalError = require('./utils/operationalError');
-const globalErrorHandler = require('./controller/errorController');
-const userRouter = require('./routes/userRouter');
-const productRouter = require('./routes/productRouter');
-const reviewRouter = require('./routes/reviewRouter');
 const morgan = require('morgan');
 const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const compression = require('compression');
 //security layer
 const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
+
+const OperationalError = require('./utils/operationalError');
+const globalErrorHandler = require('./controller/errorController');
+const userRouter = require('./routes/userRouter');
+const productRouter = require('./routes/productRouter');
+const reviewRouter = require('./routes/reviewRouter');
+
 //Setup Config variables.
 dotenv.config({ path: './config.env' });
 //Create Server.
@@ -29,8 +32,9 @@ if (process.env.NODE_ENV === 'production') {
 //extended: true //allows us to pass some more complex data(not really necessary in our case)
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-//Security HTTP headers
-app.use(helmet());
+// //Security HTTP headers in production only
+// app.use(helmet());
+
 //Rate limiter
 const limiter = rateLimit({
   //300 request per hour
@@ -87,6 +91,9 @@ app.get('/public/images/products/:path', function (req, res) {
 app.get('/public/images/users/:path', function (req, res) {
   res.download('./public/images/users/' + req.params.path);
 });
+
+//Compress all text that is sent to the client, but doesnt work for iamges
+app.use(compression());
 
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/products', productRouter);

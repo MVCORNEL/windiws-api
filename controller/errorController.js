@@ -82,8 +82,6 @@ module.exports = (err, req, res, next) => {
     //3 VALIDATION ERROR -> (Mongoose ERROR)
     if (err.name === 'ValidationError') error = handleValidationErrorDB(error);
 
-    console.log(err);
-
     sendErrorProduction(error, req, res);
   }
 };

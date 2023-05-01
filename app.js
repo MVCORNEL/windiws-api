@@ -25,14 +25,19 @@ if (process.env.NODE_ENV === 'production') {
   app.use(morgan('dev'));
 }
 
-//2.1 RATE LIMITER
+//The way that the form sends data to the userver is also called urlencoded
+//extended: true //allows us to pass some more complex data(not really necessary in our case)
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+//Security HTTP headers
+app.use(helmet());
+//Rate limiter
 const limiter = rateLimit({
   //300 request per hour
   max: 300,
   windowMs: 60 * 60 * 1000,
   message: 'To many requests from this IP, please try again in an hour',
 });
-
 //We want to apply the limiter only to the /api routes in case the would an extension of the app with server resources
 app.use('/api', limiter);
 

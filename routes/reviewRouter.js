@@ -8,7 +8,7 @@ const {
   updateReview,
   setReviewsIds,
 } = require('./../controller/reviewController');
-const { protectRoute } = require('./../controller/authHandler');
+const { protectRoute, restrictAdmin } = require('./../controller/authHandler');
 
 //Mounting the router
 //ADVANCE NESTED ROUTES -> the paramet found in training can be accessed here too

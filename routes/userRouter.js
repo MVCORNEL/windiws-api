@@ -7,6 +7,7 @@ const {
   resetPassword,
   logout,
   protectRoute,
+  restrictAdmin,
 } = require('../controller/authHandler');
 const {
   updateMyAccount,
@@ -32,6 +33,7 @@ router.patch('/updateMe', protectRoute, uploadImageInMemory, updateMyAccount);
 router.get('/getMe', protectRoute, getMyAccount);
 router.delete('/deleteMe', protectRoute, deleteMyAccount);
 //Admin users
+router.use(protectRoute, restrictAdmin);
 router.route('/').get(getAllUsers).post(createUser);
 router.route('/:id').get(getUser).patch(updateUser).delete(deleteUser);
 

@@ -219,7 +219,8 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 exports.protectRoute = catchAsync(async (req, res, next) => {
   //1 Get and store the jwt htto cookie token
   let jwtToken;
-
+  console.log('HERE');
+  console.log(req.cookies?.jwt);
   if (req.cookies?.jwt) {
     jwtToken = req.cookies.jwt;
   }
@@ -246,6 +247,7 @@ exports.protectRoute = catchAsync(async (req, res, next) => {
 
   //6 The user gains access to the secure resources, his id establish from its jwt cookie is passed further into the middleware chain.
   req.userID = user._id.valueOf();
+  req.userRole = user.role;
   next();
 });
 
@@ -284,6 +286,19 @@ exports.isLoggedIn = catchAsync(async (req, res, next) => {
     res.locals.user = userInfo;
   }
 
+  next();
+});
+
+/**
+ * Middleware function used to restrict acces of a router base on the user role.
+ * @param {function} next expects a function that will be used to  navigate to the next middleware
+ */
+exports.restrictAdmin = catchAsync(async (req, res, next) => {
+  const ROLE = 'admin';
+  if (req?.userRole !== ROLE) {
+    //403 FORBIDDEN
+    return next(new OperationalError('You do not have permission to perform this action', 403));
+  }
   next();
 });
 

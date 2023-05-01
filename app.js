@@ -12,7 +12,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 //security layer
 const rateLimit = require('express-rate-limit');
-
+const mongoSanitize = require('express-mongo-sanitize');
 //Setup Config variables.
 dotenv.config({ path: './config.env' });
 //Create Server.
@@ -47,6 +47,9 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '15kb' }));
 //Cookie Parser - parses data from cookie
 app.use(cookieParser());
+//DATA SANITIZATION against NoSQL query Injection
+//The aboce function reads our data into requset.body and only after we can clean
+app.use(mongoSanitize());
 
 //Serv static images within the public file folder
 app.use(express.static(path.join(__dirname, 'public/images/products')));

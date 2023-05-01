@@ -219,8 +219,6 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 exports.protectRoute = catchAsync(async (req, res, next) => {
   //1 Get and store the jwt htto cookie token
   let jwtToken;
-  console.log('HERE');
-  console.log(req.cookies?.jwt);
   if (req.cookies?.jwt) {
     jwtToken = req.cookies.jwt;
   }

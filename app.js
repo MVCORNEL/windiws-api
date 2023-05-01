@@ -10,6 +10,8 @@ const morgan = require('morgan');
 const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+//security layer
+const rateLimit = require('express-rate-limit');
 
 //Setup Config variables.
 dotenv.config({ path: './config.env' });
@@ -20,6 +22,17 @@ const app = express();
 if (process.env.NODE_ENV === 'production') {
   app.use(morgan('dev'));
 }
+
+//2.1 RATE LIMITER
+const limiter = rateLimit({
+  //300 request per hour
+  max: 300,
+  windowMs: 60 * 60 * 1000,
+  message: 'To many requests from this IP, please try again in an hour',
+});
+
+//We want to apply the limiter only to the /api routes in case the would an extension of the app with server resources
+app.use('/api', limiter);
 
 //Implement CORS
 const corsOptions = {

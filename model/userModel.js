@@ -22,7 +22,7 @@ const userSchema = mongoose.Schema({
     maxlength: [20, 'Last name must have less or equal than 20 characters'],
     trim: true,
   },
-
+  image: { type: String, default: 'default.jpg' },
   email: {
     type: String,
     required: [true, 'Please provide a valid email'],
@@ -178,8 +178,7 @@ userSchema.methods.createPasswordResetToken = function () {
  *
  */
 userSchema.pre(/^find/, async function (next) {
-  //this points to the current query
-  console.log('Called');
+  //return only the users that are not deactivated.
   this.find({ active: { $ne: false } });
   next();
 });

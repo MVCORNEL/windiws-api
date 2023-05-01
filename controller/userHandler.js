@@ -1,6 +1,42 @@
 const catchAsync = require('./catchAsync');
 const OperationalError = require('./../utils/operationalError');
 const User = require('./../model/userModel');
+const { resizeAndStoreImage } = require('./../utils/imageProcessor');
+const {
+  getAllDocuments,
+  deleteDocument,
+  updateDocument,
+  createDocument,
+  getDocument,
+} = require('./factoryCRUDHandler');
+
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
+/**
+ * Middleware function used query the database for users, and send the respomnse as JSON to the client
+ */
+exports.createUser = createDocument(User);
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
+/**
+ * Middleware function used query the database for users, and send the respomnse as JSON to the client
+ */
+exports.getUser = getDocument(User);
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
+/**
+ * Middleware function used query the database for users, and send the respomnse as JSON to the client
+ */
+exports.getAllUsers = getAllDocuments(User);
+
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
+/**
+ * Middleware function used query the database for users, and send the respomnse as JSON to the client
+ */
+exports.deleteUser = deleteDocument(User);
+
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
+/**
+ * Middleware function used query the database for users, and send the respomnse as JSON to the client
+ */
+exports.updateUser = updateDocument(User);
 
 //Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 /**
@@ -36,18 +72,33 @@ exports.updateMyAccount = catchAsync(async (req, res, next) => {
     return next(new OperationalError('This route is not for updating passwords. Try /updatePassword', 400));
   }
 
-  //2 Update the user body -> cannot use User.save because password validation will run, an ther is no password
+  //2 If the update request has and expects an image
+  const imgPath = `public/images/users/${Date.now()}.jpg`;
+  if (req.files?.image) {
+    //set the imgUrl on body object, used later for creating and inserting the doc into db and for image resizing and storing
+    req.body.image = `${req.protocol}://${req.get('host')}/${imgPath}`;
+  }
+
+  //3 Update the user body -> cannot use User.save because password validation will run, an ther is no password
   //  Must avoid updating attributes like role, password, confPassword by filtering out data coming from the requset body
-  const fieldsToUpdate = filterFields(req.body, 'lastName', 'firstName', 'phoneNumber');
-  //3 Update and  obtain the user and deselect any unnecessary data, by projecting only the requried fields.
+  const fieldsToUpdate = filterFields(req.body, 'lastName', 'firstName', 'phoneNumber', 'image');
+
+  //4 Update and  obtain the user and deselect any unnecessary data, by projecting only the requried fields.
   const updatedUser = await User.findByIdAndUpdate(req.userID, fieldsToUpdate, {
     new: true,
     runValidators: true,
   }).select('-__v -role');
-  //4 Couldn't find the user. May not be required.
+
+  //5 Couldn't find the user. May not be required.
   if (!updatedUser) {
     next(new OperationalError('No such user found, wrong ID', 404));
   }
+
+  //6 Upload and resize the image
+  if (updatedUser && req.files?.image) {
+    resizeAndStoreImage(req.files?.image[0].buffer, imgPath, 500);
+  }
+
   //5 Send back to the user the new data
   res.status(200).json({
     status: 'success',

@@ -5,6 +5,7 @@ const OperationalError = require('./utils/operationalError');
 const globalErrorHandler = require('./controller/errorController');
 const userRouter = require('./routes/userRouter');
 const productRouter = require('./routes/productRouter');
+const reviewRouter = require('./routes/reviewRouter');
 const morgan = require('morgan');
 const cors = require('cors');
 const path = require('path');
@@ -36,13 +37,19 @@ app.use(cookieParser());
 
 //Serv static images within the public file folder
 app.use(express.static(path.join(__dirname, 'public/images/products')));
+app.use(express.static(path.join(__dirname, 'public/images/users')));
+
 //Serve the product images to the client
 app.get('/public/images/products/:path', function (req, res) {
   res.download('./public/images/products/' + req.params.path);
 });
+app.get('/public/images/users/:path', function (req, res) {
+  res.download('./public/images/users/' + req.params.path);
+});
 
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/products', productRouter);
+app.use('/api/v1/reviews', reviewRouter);
 
 //Unhadled routes, if the code reaches this point it means that the desired route doesn't exit (all stands for all http methods, while * stand for any route)
 app.all('*', (req, res, next) => {

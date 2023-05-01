@@ -3,8 +3,8 @@ const catchAsync = require('./catchAsync');
 const FilterApi = require('../utils/filterAPI');
 const OperationalError = require('./../utils/operationalError');
 const { resizeAndStoreImage } = require('./../utils/imageProcessor');
-const URL = require('url');
 
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 /**
  * Middleware function used query the database for a document based on a provided _id and its data Model object,
  * Sends the result back to the client.
@@ -30,6 +30,7 @@ exports.getDocument = (Model) => {
   });
 };
 
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 /**
  * Middleware function used query the database for a documents based on a provided Model data object,
  * Sends the result back to the client.
@@ -58,6 +59,7 @@ exports.getAllDocuments = (Model) => {
   });
 };
 
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 /**
  * Middleware function used to create a new document entry based on the user information passed into the body request object  by the user.
  * If the middleaware expect an image the image will be resized and stored into the newly created imgUrl
@@ -72,9 +74,8 @@ exports.getAllDocuments = (Model) => {
 exports.createDocument = (Model, storedFolder = null) => {
   return catchAsync(async (req, res, next) => {
     //1 If the create request has and expects an image
-
     const imgPath = `public/images/${storedFolder}/${Date.now()}.jpg`;
-    if (storedFolder && req.files.image) {
+    if (storedFolder && req.files?.image) {
       //set the imgUrl on body object, used later for creating and inserting the doc into db and for image resizing and storing
       req.body.imgUrl = `${req.protocol}://${req.get('host')}/${imgPath}`;
     }
@@ -82,7 +83,7 @@ exports.createDocument = (Model, storedFolder = null) => {
     const document = await Model.create(req.body);
 
     //3 Upload and resize the image
-    if (document && req.files.image && storedFolder) {
+    if (document && storedFolder && req.files.image) {
       resizeAndStoreImage(req.files.image[0].buffer, imgPath, 500);
     }
     //4 Let the user know the operation had succeded
@@ -93,6 +94,7 @@ exports.createDocument = (Model, storedFolder = null) => {
   });
 };
 
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 /**
  * Middleware function used to delete  a document entry based on a user id  passed into the body request object by the user.
  * Sends the result back to the client.
@@ -104,7 +106,13 @@ exports.createDocument = (Model, storedFolder = null) => {
  */
 exports.deleteDocument = (Model) => {
   return catchAsync(async (req, res, next) => {
-    const document = await Model.findOneAndDelete(req.params.id);
+    //In case there are multiple ids on the request
+    const listOfIds = req.params.id.split(',');
+    const document = await Model.deleteMany({ _id: listOfIds });
+    //What happend if the document doesnt exist
+    if (!document) {
+      return next(new OperationalError('No document found with the current id', 404));
+    }
     res.status(204).json({
       status: 'success',
       data: document,
@@ -112,6 +120,7 @@ exports.deleteDocument = (Model) => {
   });
 };
 
+//Code inspired from https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/
 /*
  * Middleware function used to update  a document entry based on a user id  and its field passed into the request body by the user.
  * Sends the result back to the client.
@@ -121,14 +130,27 @@ exports.deleteDocument = (Model) => {
  * @param {object} res expects a response object
  * @param {function} next expects a function that will be used to  navigate to the next middleware
  */
-exports.updateDocument = (Model) => {
+exports.updateDocument = (Model, storedFolder) => {
   return catchAsync(async (req, res, next) => {
+    //1 If the create request has and expects an image
+    const imgPath = `public/images/${storedFolder}/${Date.now()}.jpg`;
+
+    if (storedFolder && req.files?.image) {
+      //set the imgUrl on body object, used later for creating and inserting the doc into db and for image resizing and storing
+      req.body.imgUrl = `${req.protocol}://${req.get('host')}/${imgPath}`;
+    }
+    //2 Update the current document
     const document = await Model.findByIdAndUpdate(req.params.id, req.body, {
       //returned document will be the newly updated one
       new: true,
       //each time a document is updated, the validators within the schema will run again
       runValidators: true,
     });
+
+    //3 Upload and resize the image
+    if (document && storedFolder && req.files?.image) {
+      resizeAndStoreImage(req.files.image[0].buffer, imgPath, 500);
+    }
 
     res.status(200).json({
       status: 'success',

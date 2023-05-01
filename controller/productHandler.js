@@ -26,4 +26,4 @@ exports.deleteProduct = deleteDocument(Product);
 /**
  * Middleware function used to update product document entry based on a user id and its field passed into the request body.
  */
-exports.updateProduct = updateDocument(Product);
+exports.updateProduct = updateDocument(Product, 'products');

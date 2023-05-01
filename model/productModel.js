@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+
 /**
  * Mongoose schema  used to model the structure of the data, default values, and data validation for the PRODUCT
- * Product  fields within the documents are (name,summary,email,description, imageUrl, slug)
+ * Product  fields within the documents are (name,summary,email,description, imageUrl, slug, ratingsAverage, ratingsQuantity)
  */
 const productSchema = new mongoose.Schema({
   name: {
@@ -10,8 +11,8 @@ const productSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     required: [true, 'A product must have a name'],
-    minLength: [4, 'A product name must have at least 5 characters.'],
-    maxLength: [30, 'A product name must have maximum 20 characters.'],
+    minLength: [3, 'A product name must have at least 3 characters.'],
+    maxLength: [25, 'A product name must have maximum 25 characters.'],
   },
 
   category: {
@@ -26,8 +27,8 @@ const productSchema = new mongoose.Schema({
   summary: {
     type: String,
     trim: true,
-    minLength: [50, 'A product summary must have at least 50 characters.'],
-    maxLength: [250, 'A product summary must have maximum 25 characters.'],
+    minLength: [100, 'A product summary must have at least 100 characters.'],
+    maxLength: [200, 'A product summary must have maximum 200 characters.'],
     requried: [true, 'A product must a short summary '],
   },
 
@@ -35,7 +36,23 @@ const productSchema = new mongoose.Schema({
     type: String,
     trim: true,
     requried: [true, 'A product must have description'],
-    minLength: [50, 'A product summary must have at least 50 characters.'],
+    minLength: [200, 'A product description must have at least 200 characters.'],
+    maxLength: [1500, 'A product description must have maximum 1500 characters.'],
+  },
+
+  ratingsAverage: {
+    type: Number,
+    default: 4,
+    //min/max will also work with dates
+    min: [1, 'Rating must be above 1.0'],
+    max: [5, 'Rating must be below 5.0'],
+    //this function will be run each time a new value is set for this field
+    set: (val) => Math.round(val * 10) / 10,
+  },
+
+  ratingsQuantity: {
+    type: Number,
+    default: 0,
   },
 
   imgUrl: {

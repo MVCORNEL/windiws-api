@@ -44,6 +44,7 @@ const sendErrorProduction = (err, req, res) => {
   else {
     //On heroku, this will provide access to the error logs
     //Send a generic message, for non operational errors
+    console.error(err);
     res.status(500).json({
       status: 'error',
       message: 'Something went wrong',
@@ -80,6 +81,9 @@ module.exports = (err, req, res, next) => {
     if (err.code === 11000) error = handleDuplicateFieldsDB(error);
     //3 VALIDATION ERROR -> (Mongoose ERROR)
     if (err.name === 'ValidationError') error = handleValidationErrorDB(error);
+
+    console.log(err);
+
     sendErrorProduction(error, req, res);
   }
 };

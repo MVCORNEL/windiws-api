@@ -20,11 +20,9 @@ mongoose.connect(DATABASE)?.then((connection) => {
   console.log('Database successfully connected');
 });
 
-//GET THE SERVER PORT
-const SERVER_PORT = process.env.SERVER_PORT;
 //STARTUP SERVER WITH THE GIVEN PORT
-const server = app.listen(SERVER_PORT, () => {
-  console.log(`Server running on the port`, SERVER_PORT);
+const server = app.listen(process.env.PORT || 5000, () => {
+  console.log(`Server running on the port`, process.env.PORT);
 });
 
 /** Process listener that triggers when  asynchronous ERORR are not handled, this errors must from outside of the express environment

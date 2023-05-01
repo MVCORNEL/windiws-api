@@ -14,6 +14,7 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
+const hpp = require('hpp');
 //Setup Config variables.
 dotenv.config({ path: './config.env' });
 //Create Server.
@@ -53,6 +54,22 @@ app.use(cookieParser());
 app.use(mongoSanitize());
 //Clean any user input from malicious html code and javascript
 app.use(xss());
+//Prevent parameter pollution
+app.use(
+  hpp({
+    whitelist: [
+      'firstName',
+      'ratingsQuantity',
+      'ratingsAverage',
+      'description',
+      'category',
+      'summary',
+      'name',
+      'phone',
+      'email',
+    ],
+  })
+);
 
 //Serv static images within the public file folder
 app.use(express.static(path.join(__dirname, 'public/images/products')));

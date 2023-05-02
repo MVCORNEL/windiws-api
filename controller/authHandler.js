@@ -34,7 +34,6 @@ const createSendToken = (_user, statusCode, res) => {
   console.log('HERE');
   console.log(_user);
 
-  
   const user = {
     firstName: _user.firstName,
     email: _user.email,

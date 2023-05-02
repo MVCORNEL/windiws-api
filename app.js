@@ -31,7 +31,7 @@ if (process.env.NODE_ENV === 'production') {
 
 //The way that the form sends data to the userver is also called urlencoded
 //extended: true //allows us to pass some more complex data(not really necessary in our case)
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '20kb' }));
 
 // //Security HTTP headers in production only
 // app.use(helmet());

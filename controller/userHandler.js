@@ -87,7 +87,7 @@ exports.updateMyAccount = catchAsync(async (req, res, next) => {
   const updatedUser = await User.findByIdAndUpdate(req.userID, fieldsToUpdate, {
     new: true,
     runValidators: true,
-  }).select('-__v -role');
+  }).select('-__v');
 
   //5 Couldn't find the user. May not be required.
   if (!updatedUser) {

@@ -31,6 +31,7 @@ const sendErrorDevelopment = (err, res) => {
  * @param {object} res expects a response object
  */
 const sendErrorProduction = (err, req, res) => {
+  console.error(err);
   //Only the operational erorr will be send in production.Trusted errors.
   if (err.isOperational) {
     //1 LOG ERROR -> When the app will be deployed by using heroku...will have access to the logs

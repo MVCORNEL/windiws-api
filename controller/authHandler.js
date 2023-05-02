@@ -11,17 +11,17 @@ const jwt = require('jsonwebtoken');
  * Function used to create a JWT TOKEN based on a user id as payload, expiring time, and some headers options.
  * The JWT Token will be embeded into response object cookie and sent back to the client
  * Jwt token is created by calling @function createJWT
- * @param {object} user expects an user schema object
+ * @param {object} _user expects an user schema object
  * @param {number} statusCode expects a status code
  * @param {function} expects a response object
  */
-const createSendToken = (user, statusCode, res) => {
+const createSendToken = (_user, statusCode, res) => {
   const JSON_TOKEN_EXPIRING_TIME_IN_DAYS = process.env.JSON_TOKEN_EXPIRING_TIME_IN_DAYS;
   const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
   const TOKEN_EXPIRING_DATE = Date.now() + JSON_TOKEN_EXPIRING_TIME_IN_DAYS * DAY_IN_MILLISECONDS;
   // const TOKEN_EXPIRING_DATE = Date.now() + 20000;
   //1 Create JWT token with the payload of user's id
-  const token = createJWT(user._id);
+  const token = createJWT(_user._id);
   //2 Create COOKIE OPTION
   const cookieOptions = {
     expires: new Date(TOKEN_EXPIRING_DATE),
@@ -31,6 +31,17 @@ const createSendToken = (user, statusCode, res) => {
     secure: true,
   };
 
+  console.log('HERE');
+  console.log(_user);
+
+  
+  const user = {
+    firstName: _user.firstName,
+    email: _user.email,
+    lastName: _user.lastName,
+    image: _user.image,
+    role: _user.role,
+  };
   //3 Set the cookie on the response object
   res.cookie('jwt', token, cookieOptions);
 
